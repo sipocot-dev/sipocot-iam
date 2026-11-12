@@ -1,0 +1,29 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: sipocot-iam
+labels:
+  - pairs:
+      app.kubernetes.io/name: sipocot-iam
+      app.kubernetes.io/part-of: sipocot-iam
+    includeSelectors: false
+resources:
+  - serviceaccount.yaml
+  - configmap.yaml
+  - deployment.yaml
+  - service.yaml
+  - hpa.yaml
+  - pdb.yaml
+  - networkpolicy.yaml
+  - migrate-job.yaml
+  - cronjobs.yaml
+  - ingress.yaml
+images:
+  - name: sipocot-iam
+    newName: ghcr.io/OWNER/sipocot-iam
+    newTag: latest
+  - name: sipocot-iam-migrator
+    newName: ghcr.io/OWNER/sipocot-iam-migrator
+    newTag: latest
+  - name: sipocot-iam-backup
+    newName: ghcr.io/OWNER/sipocot-iam-backup
+    newTag: latest

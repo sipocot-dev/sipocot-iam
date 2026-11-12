@@ -1,0 +1,29 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: sipocot-iam-staging
+resources: [namespace.yaml, ../../base]
+patches:
+  - target: { kind: ConfigMap, name: sipocot-iam-config }
+    patch: |
+      - op: replace
+        path: /data/APP_ENV
+        value: staging
+      - op: replace
+        path: /data/LOG_LEVEL
+        value: debug
+  - target: { kind: HorizontalPodAutoscaler, name: sipocot-iam }
+    patch: |
+      - op: replace
+        path: /spec/minReplicas
+        value: 1
+      - op: replace
+        path: /spec/maxReplicas
+        value: 3
+  - target: { kind: Ingress, name: sipocot-iam }
+    patch: |
+      - op: replace
+        path: /spec/rules/0/host
+        value: iam-staging.example.gov.ph
+      - op: replace
+        path: /spec/tls/0/hosts/0
+        value: iam-staging.example.gov.ph

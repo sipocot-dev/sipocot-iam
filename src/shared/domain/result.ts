@@ -1,0 +1,17 @@
+/**
+ * Explicit success/failure type for *expected* outcomes (validation, business rule
+ * violations). Unexpected failures (I/O down, bugs) are thrown and handled by the
+ * error boundary in the interface layer.
+ */
+export interface Ok<T> {
+  readonly ok: true;
+  readonly value: T;
+}
+export interface Err<E> {
+  readonly ok: false;
+  readonly error: E;
+}
+export type Result<T, E> = Ok<T> | Err<E>;
+
+export const ok = <T>(value: T): Ok<T> => ({ ok: true, value });
+export const err = <E>(error: E): Err<E> => ({ ok: false, error });

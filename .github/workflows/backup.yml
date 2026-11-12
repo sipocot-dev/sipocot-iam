@@ -1,0 +1,65 @@
+# Database backups while running on Vercel (serverless has no pg_dump / cron containers).
+# On Kubernetes the CronJob in deploy/k8s/base/cronjobs.yaml does the same thing.
+name: Database backup
+
+on:
+  schedule:
+    - cron: '0 18 * * *' # 02:00 Asia/Manila
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: db-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL 17 client
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSo /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client-17
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.BACKUP_AWS_ROLE_ARN }}
+          aws-region: ap-southeast-1
+      - name: Backup
+        env:
+          DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+          BACKUP_S3_URI: ${{ secrets.BACKUP_S3_URI }}
+          BACKUP_ENCRYPTION_PASSPHRASE: ${{ secrets.BACKUP_ENCRYPTION_PASSPHRASE }}
+        run: scripts/backup/pg-backup.sh
+
+  restore-drill:
+    needs: backup
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 60
+    services:
+      scratch:
+        image: postgres:17-alpine
+        env: { POSTGRES_USER: drill, POSTGRES_PASSWORD: drill, POSTGRES_DB: drill }
+        ports: ['5432:5432']
+        options: --health-cmd "pg_isready -U drill" --health-interval 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.BACKUP_AWS_ROLE_ARN }}
+          aws-region: ap-southeast-1
+      - name: Restore latest backup into scratch DB and verify
+        env:
+          BACKUP_S3_URI: ${{ secrets.BACKUP_S3_URI }}
+          BACKUP_ENCRYPTION_PASSPHRASE: ${{ secrets.BACKUP_ENCRYPTION_PASSPHRASE }}
+          SCRATCH_DATABASE_URL: postgres://drill:drill@localhost:5432/drill
+        run: scripts/backup/verify-restore.sh

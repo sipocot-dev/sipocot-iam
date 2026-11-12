@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sipocot-iam-config
+data:
+  APP_ENV: production
+  LOG_LEVEL: info
+  TRUST_PROXY: 'true'
+  DATABASE_POOL_MAX: '10'
+  DATABASE_PREPARE: 'true'
+  S3_REGION: ap-southeast-1
+  S3_SSE: aws:kms
+  S3_URL_TTL_SECONDS: '300'
+  SESSION_ABSOLUTE_TTL_HOURS: '168'
+  SESSION_IDLE_TTL_MINUTES: '120'
+  OTEL_SERVICE_NAME: sipocot-iam

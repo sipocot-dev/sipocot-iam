@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: sipocot-iam
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: 1m
+    nginx.ingress.kubernetes.io/ssl-redirect: 'true'
+    # /api/metrics and /api/internal/* require bearer tokens; additionally block them at
+    # your edge (WAF / Gateway API HTTPRoute filter) if your controller supports it.
+spec:
+  ingressClassName: nginx
+  tls: [{ hosts: [iam.example.gov.ph], secretName: sipocot-iam-tls }]
+  rules:
+    - host: iam.example.gov.ph
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend: { service: { name: sipocot-iam, port: { name: http } } }

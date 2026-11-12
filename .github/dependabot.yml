@@ -1,0 +1,19 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule: { interval: weekly, day: monday, timezone: Asia/Manila }
+    open-pull-requests-limit: 10
+    # Wait before adopting fresh releases (supply-chain hygiene).
+    cooldown: { default-days: 7, semver-major-days: 30 }
+    groups:
+      next-react: { patterns: ['next', 'react', 'react-dom', '@types/react*', 'eslint-config-next'] }
+      aws-sdk: { patterns: ['@aws-sdk/*'] }
+      opentelemetry: { patterns: ['@opentelemetry/*', '@vercel/otel'] }
+      lint-test: { patterns: ['eslint*', '@eslint/*', 'typescript-eslint', 'vitest', '@vitest/*', 'prettier'] }
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly }
+  - package-ecosystem: docker
+    directory: /
+    schedule: { interval: weekly }

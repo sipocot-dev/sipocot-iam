@@ -1,0 +1,6 @@
+# Requires the Prometheus Operator CRDs. Include from an overlay with `components:`.
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+resources:
+  - servicemonitor.yaml
+  - prometheusrule.yaml

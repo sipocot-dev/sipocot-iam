@@ -1,0 +1,43 @@
+# Default deny, then allow only what the service needs.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: sipocot-iam-api
+spec:
+  podSelector:
+    matchLabels: { app.kubernetes.io/name: sipocot-iam, app.kubernetes.io/component: api }
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: ingress-nginx } }
+        - namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: monitoring } }
+        - podSelector: { matchLabels: { app.kubernetes.io/component: cron } }
+      ports: [{ port: 3000 }]
+  egress:
+    - to: [{ namespaceSelector: {}, podSelector: { matchLabels: { k8s-app: kube-dns } } }]
+      ports: [{ port: 53, protocol: UDP }, { port: 53, protocol: TCP }]
+    # Postgres, Redis, S3 (HTTPS) and OTLP. Narrow to CIDRs / FQDN policies in your overlay.
+    - ports: [{ port: 5432 }, { port: 6379 }, { port: 443 }, { port: 4318 }]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: sipocot-iam-jobs
+spec:
+  podSelector:
+    matchExpressions: [{ key: app.kubernetes.io/component, operator: In, values: [migrate, backup, cron] }]
+  policyTypes: [Ingress, Egress]
+  egress:
+    - to: [{ namespaceSelector: {}, podSelector: { matchLabels: { k8s-app: kube-dns } } }]
+      ports: [{ port: 53, protocol: UDP }, { port: 53, protocol: TCP }]
+    - ports: [{ port: 5432 }, { port: 443 }]
+    - to: [{ podSelector: { matchLabels: { app.kubernetes.io/component: api } } }]
+      ports: [{ port: 3000 }]

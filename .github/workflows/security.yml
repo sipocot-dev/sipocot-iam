@@ -1,0 +1,66 @@
+name: Security
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 22 * * 0' # weekly, Monday 06:00 Asia/Manila
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-audit:
+    name: Dependency audit (pnpm audit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version-file: .nvmrc, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - name: Fail on high/critical vulnerabilities in production deps
+        run: pnpm audit --prod --audit-level high
+      - name: Report all advisories (non-blocking)
+        run: pnpm audit || true
+
+  osv-scanner:
+    name: OSV-Scanner (lockfile)
+    permissions: { contents: read, security-events: write, actions: read }
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v2.2.2
+    with:
+      scan-args: --lockfile=pnpm-lock.yaml
+
+  dependency-review:
+    name: Dependency review (PR)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions: { contents: read, pull-requests: write }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+          deny-licenses: GPL-3.0, AGPL-3.0
+          comment-summary-in-pr: on-failure
+
+  codeql:
+    name: CodeQL (SAST)
+    runs-on: ubuntu-latest
+    permissions: { contents: read, security-events: write, actions: read }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with: { languages: javascript-typescript, queries: security-extended }
+      - uses: github/codeql-action/analyze@v3
+
+  secrets:
+    name: Secret scanning (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

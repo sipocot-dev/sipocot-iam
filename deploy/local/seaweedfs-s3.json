@@ -1,0 +1,9 @@
+{
+  "identities": [
+    {
+      "name": "sipocot-local",
+      "credentials": [{ "accessKey": "sipocot", "secretKey": "sipocot-secret" }],
+      "actions": ["Admin", "Read", "Write", "List", "Tagging"]
+    }
+  ]
+}
