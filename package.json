@@ -27,9 +27,9 @@
     "verify": "pnpm run typecheck && pnpm run lint && pnpm run format:check && pnpm test"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "3.1160.0",
-    "@aws-sdk/s3-presigned-post": "3.1160.0",
-    "@aws-sdk/s3-request-presigner": "3.1160.0",
+    "@aws-sdk/client-s3": "3.1169.0",
+    "@aws-sdk/s3-presigned-post": "3.1169.0",
+    "@aws-sdk/s3-request-presigner": "3.1169.0",
     "@node-rs/argon2": "2.2.2",
     "@opentelemetry/api": "1.9.1",
     "@opentelemetry/api-logs": "0.223.0",
