@@ -35,7 +35,7 @@ USER node
 CMD ["node", "--import", "tsx", "scripts/db/migrate.ts"]
 
 # ── backup ───────────────────────────────────────────────────────────────────
-FROM postgres:17-alpine AS backup
+FROM postgres:19-alpine AS backup
 RUN apk add --no-cache aws-cli gnupg bash coreutils \
  && adduser -D -u 10001 backup
 COPY --chmod=0755 scripts/backup/*.sh /usr/local/bin/
